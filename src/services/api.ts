@@ -295,7 +295,7 @@ export interface GliderMission {
   has_real_data?: boolean
 }
 
-const FALLBACK_DIRECT_URL = 'https://sih2026-xdr2.onrender.com/api'
+const FALLBACK_DIRECT_URL = 'https://neerdrishti-backend-jl2v.onrender.com/api'
 
 async function apiFetch<T>(path: string, params?: Record<string, string | number | undefined | null>): Promise<T> {
   const isAbsolute = API_BASE.startsWith('http://') || API_BASE.startsWith('https://')

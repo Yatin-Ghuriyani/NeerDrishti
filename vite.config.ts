@@ -8,7 +8,7 @@ export default defineConfig(({ mode }) => ({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'https://sih2026-xdr2.onrender.com',
+        target: 'https://neerdrishti-backend-jl2v.onrender.com',
         changeOrigin: true,
         secure: false,
         headers: {

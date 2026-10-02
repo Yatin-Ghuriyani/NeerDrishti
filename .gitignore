@@ -34,3 +34,6 @@ dist-ssr/
 # Temp / Cache
 .vite/
 .cache/
+
+# Backend standalone repo
+backend/
