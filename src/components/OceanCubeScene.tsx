@@ -301,7 +301,7 @@ const DISASTERS_META: Record<DisasterType, DisasterMeta> = {
     id: 'cyclone',
     name: 'Severe Cyclones Remal & Dana (2024)',
     dateRange: '24–28 May 2024 (Remal) · 22–26 Oct 2024 (Dana)',
-    peakAnomalyDate: '26 May 2024, 18:00 UTC (Peak Super Landfall & Cold Wake)',
+    peakAnomalyDate: '26 May 2024, 23:30 IST (Peak Super Landfall & Cold Wake)',
     icon: '🌀',
     color: '#f87171',
     desc: 'Violent cyclonic vortex in Bay of Bengal, extreme wave surge (Hs ~7.5m), -3.8°C cold wake upwelling along storm track (16.5°N, 86.5°E), and heavy sea spray.',
@@ -2169,7 +2169,7 @@ export default function OceanCubeScene({
         const curDepthM = isLand ? 0 : Math.max(0, -pt.y / (OCEAN_SCALE * vertExaggeration))
         const targetD = depthM > 0 ? depthM : curDepthM
         const physics = computeOceanPhysicsAtDepth(ll.lat, ll.lon, targetD, Math.round((scene.time_index / 100) * 11), season, disaster)
-        physics.obsDate = '18 Jul 2023, 12:00 UTC'
+        physics.obsDate = '18 Jul 2023, 17:30 IST'
 
         setProbe({
           ...ll,
@@ -2212,8 +2212,8 @@ export default function OceanCubeScene({
             selectedPointRef.current = { lat: f.latitude, lon: f.longitude, depth_m: depthM }
             const physics = computeOceanPhysicsAtDepth(f.latitude, f.longitude, depthM, tIdx, season, disaster)
             const dateStr = f.time
-              ? new Date(f.time).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'UTC' }) + ' UTC'
-              : '18 Jul 2023, 10:45 UTC'
+              ? new Date(f.time).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Kolkata' }) + ' IST'
+              : '18 Jul 2023, 16:15 IST'
             physics.obsDate = dateStr
 
             setPinnedPoint({
@@ -2265,7 +2265,7 @@ export default function OceanCubeScene({
         const targetD = depthM > 0 ? depthM : Math.round(hitDepthM)
         selectedPointRef.current = { lat: ll.lat, lon: ll.lon, depth_m: targetD }
         const physics = computeOceanPhysicsAtDepth(ll.lat, ll.lon, targetD, tIdx, season, disaster)
-        physics.obsDate = '18 Jul 2023, 12:00 UTC'
+        physics.obsDate = '18 Jul 2023, 17:30 IST'
 
         setPinnedPoint({
           lat: ll.lat,
@@ -2367,7 +2367,7 @@ export default function OceanCubeScene({
             DIVE / WALK TELEMETRY — ESC to exit
           </div>
           <div style={{ fontSize: 9.5, color: '#38bdf8', marginBottom: 8, borderBottom: '1px solid rgba(0,255,120,0.2)', paddingBottom: 4 }}>
-            📅 Observation Date: {walkPos.physics.obsDate || '18 Jul 2023, 12:00 UTC'}
+            📅 Observation Date: {walkPos.physics.obsDate || '18 Jul 2023, 17:30 IST'}
           </div>
           {[
             { k: 'LAT / LON', v: `${walkPos.lat.toFixed(3)}°N  ${walkPos.lon.toFixed(3)}°E` },
@@ -2451,7 +2451,7 @@ export default function OceanCubeScene({
           </div>
 
           <div style={{ fontSize: 9.5, color: '#ffd740', marginBottom: 4 }}>
-            📅 Plotted Date: {probe.physics.obsDate || '18 Jul 2023, 12:00 UTC'}
+            📅 Plotted Date: {probe.physics.obsDate || '18 Jul 2023, 17:30 IST'}
           </div>
 
           {probe.isLand ? (
@@ -2559,7 +2559,7 @@ export default function OceanCubeScene({
           {/* Plotted Observation Date Display */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6, padding: '3px 6px', background: 'rgba(255,215,64,0.12)', border: '1px solid rgba(255,215,64,0.3)', borderRadius: 4, color: '#ffd740', fontSize: 10 }}>
             <span>📅</span>
-            <span>Date: {pinnedPoint.physics.obsDate || '18 Jul 2023, 12:00 UTC'}</span>
+            <span>Date: {pinnedPoint.physics.obsDate || '18 Jul 2023, 17:30 IST'}</span>
           </div>
 
           <div style={{ color: '#38bdf8', fontSize: 10, fontWeight: 600, marginBottom: 6 }}>

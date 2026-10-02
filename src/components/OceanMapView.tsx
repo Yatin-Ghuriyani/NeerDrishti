@@ -791,9 +791,10 @@ export default function OceanMapView({
           onHover: (info: any) => {
             if (info.object) {
               const w = info.object as GliderWaypointItem
+              const timeFormatted = w.time ? new Date(w.time).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour12: false }) + ' IST' : '—'
               setTooltip({
                 text: `Glider sea057 Observation #${w.point_id}`,
-                subtext: `Time: ${w.time.replace('T', ' ')} UTC\nLat: ${w.lat.toFixed(4)}°N, Lon: ${w.lon.toFixed(4)}°E\nSurface Temp: ${w.temp_surface ?? '—'} °C • Salinity: ${w.sal_surface ?? '—'} PSU`,
+                subtext: `Time: ${timeFormatted}\nLat: ${w.lat.toFixed(4)}°N, Lon: ${w.lon.toFixed(4)}°E\nSurface Temp: ${w.temp_surface ?? '—'} °C • Salinity: ${w.sal_surface ?? '—'} PSU`,
                 badge: 'REAL • IFREMER OceanGliders',
                 badgeColor: '#ffd54f',
                 x: info.x,

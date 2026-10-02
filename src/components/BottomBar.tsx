@@ -69,7 +69,7 @@ export default function BottomBar({ argoMeta }: BottomBarProps) {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
-    timeZone: 'UTC',
+    timeZone: 'Asia/Kolkata',
   })
 
   return (
@@ -192,7 +192,7 @@ function formatDate(isoString: string): string {
       day: '2-digit',
       month: 'short',
       year: 'numeric',
-      timeZone: 'UTC',
+      timeZone: 'Asia/Kolkata',
     })
   } catch {
     return isoString

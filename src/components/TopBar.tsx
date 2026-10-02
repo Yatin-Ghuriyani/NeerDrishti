@@ -12,12 +12,14 @@ interface TopBarProps {
 
 export default function TopBar({ health, argoMeta, viewMode, onViewModeChange }: TopBarProps) {
   const argoReady = health?.argo_ready
-  const [utcTime, setUtcTime] = useState<string>('')
+  const [istTime, setIstTime] = useState<string>('')
 
   useEffect(() => {
     const updateTime = () => {
       const now = new Date()
-      setUtcTime(now.toISOString().slice(0, 16).replace('T', ' ') + ' UTC')
+      const dateStr = now.toLocaleDateString('sv-SE', { timeZone: 'Asia/Kolkata' })
+      const timeStr = now.toLocaleTimeString('en-GB', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: false })
+      setIstTime(`${dateStr} ${timeStr} IST`)
     }
     updateTime()
     const timer = setInterval(updateTime, 30000)
@@ -126,10 +128,10 @@ export default function TopBar({ health, argoMeta, viewMode, onViewModeChange }:
 
       {/* Operational Clock & MoES Badge */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-        {utcTime && (
+        {istTime && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#94a3b8', fontFamily: 'var(--font-mono)' }}>
             <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 6px #10b981' }} />
-            {utcTime}
+            {istTime}
           </div>
         )}
         <div className="topbar__badge">
