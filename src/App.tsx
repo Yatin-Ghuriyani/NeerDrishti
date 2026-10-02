@@ -10,6 +10,7 @@ import OceanWorld3D from './components/OceanWorld3D'
 import OceanMapView from './components/OceanMapView'
 import OceanCubeScene from './components/OceanCubeScene'
 import LandingPage from './components/LandingPage'
+import { AIAssistantModal } from './components/AIAssistantModal'
 import { CesiumProvider, useCesium } from './cesium/CesiumContext'
 import { CesiumViewer } from './cesium/CesiumViewer'
 import { SceneState } from './types'
@@ -195,9 +196,10 @@ function MainApp() {
     depth_m: state.depth_m,
     time_index: state.time_index,
     show_argo: state.layers.argo,
-    show_currents: state.layers.current_vectors || state.layers.current_particles,
+    show_currents: !!state.layers.current_vectors,
     show_model: state.layers.model_slice,
     show_glider: state.layers.glider,
+    show_error_map: state.layers.model_error,
     show_bathymetry: state.layers.bathymetry,
     vertical_exaggeration: state.vertical_exaggeration,
     opacity: state.volume_opacity,
@@ -363,6 +365,7 @@ function MainApp() {
         hycomStub={health?.hycom_stub ?? false}
       />
       <BottomBar argoMeta={argoMeta} />
+      <AIAssistantModal scene={sceneState} selectedFloat={selectedFloat} />
     </div>
   )
 }

@@ -965,190 +965,228 @@ export default function OceanMapView({
         <Map mapStyle={BASEMAP_STYLE} />
       </DeckGL>
 
-      {/* ── Top Bar: Quick Navigation Presets & Mode Indicator ────────── */}
+      {/* ── Top Bar Container: Presets + Controls (Responsive & 100% Fully Visible) ── */}
       <div
         style={{
           position: 'absolute',
           top: 14,
           left: 16,
+          right: 16,
           zIndex: 20,
           display: 'flex',
-          gap: 6,
-          flexWrap: 'wrap',
+          justifyContent: 'space-between',
           alignItems: 'center',
+          gap: 12,
+          pointerEvents: 'none',
+          flexWrap: 'wrap',
         }}
       >
+        {/* Left Region Navigation & Mode Indicator */}
         <div
           style={{
-            background: 'rgba(2,10,24,0.92)',
-            border: '1px solid rgba(0,212,255,0.4)',
-            borderRadius: 6,
-            padding: '5px 10px',
-            color: '#00e5ff',
-            fontSize: 11,
-            fontWeight: 700,
-            letterSpacing: '0.8px',
-            boxShadow: '0 2px 12px rgba(0,0,0,0.5)',
+            display: 'flex',
+            gap: 6,
+            alignItems: 'center',
+            pointerEvents: 'auto',
+            flexWrap: 'wrap',
           }}
         >
-          🗺️ 2D SCIENTIFIC MAP
-        </div>
-
-        {[
-          { label: '🇮🇳 Indian Ocean', lon: 77.0, lat: 12.0, z: 4.2 },
-          { label: '🌊 Arabian Sea', lon: 65.0, lat: 16.0, z: 5.6 },
-          { label: '🌀 Bay of Bengal', lon: 88.0, lat: 15.0, z: 5.6 },
-          { label: '🛸 Glider (sea057)', lon: 57.8, lat: 24.1, z: 8.5 },
-          { label: '🎯 Fit Indian Basin', lon: 77.0, lat: 12.0, z: 4.2 },
-        ].map((btn) => (
-          <button
-            key={btn.label}
-            onClick={() => flyTo(btn.lon, btn.lat, btn.z)}
+          <div
             style={{
-              background: 'rgba(4,16,36,0.85)',
-              border: '1px solid rgba(0,180,255,0.3)',
-              color: '#8bd4ff',
-              padding: '5px 10px',
+              background: 'rgba(2,10,24,0.92)',
+              border: '1px solid rgba(0,212,255,0.4)',
               borderRadius: 6,
+              padding: '4px 8px',
+              color: '#00e5ff',
+              fontSize: 11,
+              fontWeight: 700,
+              letterSpacing: '0.5px',
+              boxShadow: '0 2px 12px rgba(0,0,0,0.5)',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            🗺️ 2D MAP
+          </div>
+
+          {/* Quick Region Selector Dropdown */}
+          <select
+            onChange={(e) => {
+              const val = e.target.value
+              if (val === 'io') flyTo(77.0, 12.0, 4.2)
+              else if (val === 'as') flyTo(65.0, 16.0, 5.6)
+              else if (val === 'bob') flyTo(88.0, 15.0, 5.6)
+              else if (val === 'glider') flyTo(57.8, 24.1, 8.5)
+            }}
+            defaultValue="io"
+            style={{
+              background: 'rgba(4,16,36,0.9)',
+              border: '1px solid rgba(0,180,255,0.4)',
+              color: '#8bd4ff',
+              borderRadius: 6,
+              padding: '4px 8px',
               fontSize: 11,
               fontWeight: 600,
               cursor: 'pointer',
-              backdropFilter: 'blur(8px)',
-              transition: 'all 0.2s',
+              outline: 'none',
             }}
-            onMouseOver={(e) => ((e.currentTarget as HTMLButtonElement).style.borderColor = '#00e5ff')}
-            onMouseOut={(e) => ((e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(0,180,255,0.3)')}
           >
-            {btn.label}
-          </button>
-        ))}
+            <option value="io">🇮🇳 Indian Ocean Basin</option>
+            <option value="as">🌊 Arabian Sea</option>
+            <option value="bob">🌀 Bay of Bengal</option>
+            <option value="glider">🛸 Glider (sea057)</option>
+          </select>
 
-        {onViewModeChange && (
-          <button
-            onClick={() => onViewModeChange('3d')}
+          {/* Quick Region Pill Buttons */}
+          {[
+            { label: '🌊 Arabian Sea', lon: 65.0, lat: 16.0, z: 5.6 },
+            { label: '🌀 Bay of Bengal', lon: 88.0, lat: 15.0, z: 5.6 },
+          ].map((btn) => (
+            <button
+              key={btn.label}
+              onClick={() => flyTo(btn.lon, btn.lat, btn.z)}
+              style={{
+                background: 'rgba(4,16,36,0.85)',
+                border: '1px solid rgba(0,180,255,0.3)',
+                color: '#8bd4ff',
+                padding: '4px 8px',
+                borderRadius: 6,
+                fontSize: 10.5,
+                fontWeight: 600,
+                cursor: 'pointer',
+                backdropFilter: 'blur(8px)',
+                whiteSpace: 'nowrap',
+              }}
+              onMouseOver={(e) => ((e.currentTarget as HTMLButtonElement).style.borderColor = '#00e5ff')}
+              onMouseOut={(e) => ((e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(0,180,255,0.3)')}
+            >
+              {btn.label}
+            </button>
+          ))}
+
+          {onViewModeChange && (
+            <button
+              onClick={() => onViewModeChange('3d')}
+              style={{
+                background: 'rgba(0,212,255,0.15)',
+                border: '1px solid #00d4ff',
+                color: '#00ffff',
+                padding: '4px 10px',
+                borderRadius: 6,
+                fontSize: 10.5,
+                fontWeight: 700,
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              🌊 3D World ➔
+            </button>
+          )}
+        </div>
+
+        {/* Right Controls Container */}
+        <div
+          style={{
+            pointerEvents: 'auto',
+            background: 'rgba(2,12,28,0.92)',
+            border: '1px solid rgba(0,212,255,0.35)',
+            borderRadius: 8,
+            padding: '5px 12px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            backdropFilter: 'blur(10px)',
+            color: '#e0f4ff',
+            fontSize: 11,
+            boxShadow: '0 2px 14px rgba(0,0,0,0.5)',
+          }}
+        >
+          {/* Variable Selector */}
+          <span style={{ fontSize: 10.5, color: '#8ba7bb', fontWeight: 600 }}>VAR:</span>
+          <select
+            value={scene.variable}
+            onChange={(e) => onSceneChange?.({ variable: e.target.value as any })}
             style={{
-              background: 'rgba(0,212,255,0.15)',
-              border: '1px solid #00d4ff',
-              color: '#00ffff',
-              padding: '5px 12px',
-              borderRadius: 6,
-              fontSize: 11,
+              background: 'rgba(6,22,46,0.9)',
+              border: '1px solid rgba(0,212,255,0.5)',
+              color: '#00e5ff',
+              borderRadius: 4,
+              padding: '3px 6px',
+              fontSize: 10.5,
               fontWeight: 700,
               cursor: 'pointer',
-              marginLeft: 4,
             }}
           >
-            🌊 Switch to 3D Ocean World ➔
-          </button>
-        )}
-      </div>
+            <option value="temperature">Temperature (°C)</option>
+            <option value="salinity">Salinity (PSU)</option>
+            <option value="current_speed">Current Speed (m/s)</option>
+          </select>
 
-      {/* ── Top-Right: Discrete Depth Level Selector (Synced) ─────────────── */}
-      <div
-        style={{
-          position: 'absolute',
-          top: 14,
-          right: 16,
-          zIndex: 20,
-          background: 'rgba(2,12,28,0.92)',
-          border: '1px solid rgba(0,212,255,0.35)',
-          borderRadius: 8,
-          padding: '7px 14px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 10,
-          backdropFilter: 'blur(10px)',
-          color: '#e0f4ff',
-          fontSize: 12,
-          boxShadow: '0 2px 14px rgba(0,0,0,0.5)',
-        }}
-      >
-        {/* Variable Selector */}
-        <span style={{ fontSize: 11, color: '#8ba7bb', fontWeight: 600 }}>VAR:</span>
-        <select
-          value={scene.variable}
-          onChange={(e) => onSceneChange?.({ variable: e.target.value as any })}
-          style={{
-            background: 'rgba(6,22,46,0.9)',
-            border: '1px solid rgba(0,212,255,0.5)',
-            color: '#00e5ff',
-            borderRadius: 4,
-            padding: '3px 8px',
-            fontSize: 11,
-            fontWeight: 700,
-            cursor: 'pointer',
-          }}
-        >
-          <option value="temperature">Temperature (°C)</option>
-          <option value="salinity">Salinity (PSU)</option>
-          <option value="current_speed">Current Speed (m/s)</option>
-        </select>
+          {/* Depth Selector */}
+          <span style={{ fontSize: 10.5, color: '#8ba7bb', fontWeight: 600 }}>DEPTH:</span>
+          <select
+            value={scene.depth_m}
+            onChange={(e) => onSceneChange?.({ depth_m: Number(e.target.value) })}
+            style={{
+              background: 'rgba(6,22,46,0.9)',
+              border: '1px solid rgba(0,212,255,0.5)',
+              color: '#00e5ff',
+              borderRadius: 4,
+              padding: '3px 6px',
+              fontSize: 10.5,
+              fontWeight: 700,
+              cursor: 'pointer',
+            }}
+          >
+            {availableDepths.map((d) => (
+              <option key={d} value={d}>
+                {d === 0 ? '0 m (Surface)' : `${d} m`}
+              </option>
+            ))}
+          </select>
 
-        {/* Depth Selector */}
-        <span style={{ fontSize: 11, color: '#8ba7bb', fontWeight: 600 }}>DEPTH:</span>
-        <select
-          value={scene.depth_m}
-          onChange={(e) => onSceneChange?.({ depth_m: Number(e.target.value) })}
-          style={{
-            background: 'rgba(6,22,46,0.9)',
-            border: '1px solid rgba(0,212,255,0.5)',
-            color: '#00e5ff',
-            borderRadius: 4,
-            padding: '3px 8px',
-            fontSize: 11,
-            fontWeight: 700,
-            cursor: 'pointer',
-          }}
-        >
-          {availableDepths.map((d) => (
-            <option key={d} value={d}>
-              {d === 0 ? '0 m (Surface)' : `${d} m`}
-            </option>
-          ))}
-        </select>
+          {/* Timestep / Month Selector */}
+          <span style={{ fontSize: 10.5, color: '#8ba7bb', fontWeight: 600 }}>MONTH:</span>
+          <select
+            value={modelTimeIdx}
+            onChange={(e) => onSceneChange?.({ time_index: Number(e.target.value) })}
+            style={{
+              background: 'rgba(6,22,46,0.9)',
+              border: '1px solid rgba(0,212,255,0.5)',
+              color: '#00e5ff',
+              borderRadius: 4,
+              padding: '3px 6px',
+              fontSize: 10.5,
+              fontWeight: 700,
+              cursor: 'pointer',
+            }}
+          >
+            {[
+              '01 Jan', '02 Feb', '03 Mar', '04 Apr', '05 May', '06 Jun',
+              '07 Jul', '08 Aug', '09 Sep', '10 Oct', '11 Nov', '12 Dec'
+            ].map((m, idx) => (
+              <option key={m} value={idx}>
+                {m}
+              </option>
+            ))}
+          </select>
 
-        {/* Timestep / Month Selector */}
-        <span style={{ fontSize: 11, color: '#8ba7bb', fontWeight: 600 }}>MONTH:</span>
-        <select
-          value={modelTimeIdx}
-          onChange={(e) => onSceneChange?.({ time_index: Number(e.target.value) })}
-          style={{
-            background: 'rgba(6,22,46,0.9)',
-            border: '1px solid rgba(0,212,255,0.5)',
-            color: '#00e5ff',
-            borderRadius: 4,
-            padding: '3px 8px',
-            fontSize: 11,
-            fontWeight: 700,
-            cursor: 'pointer',
-          }}
-        >
-          {[
-            '01 Jan', '02 Feb', '03 Mar', '04 Apr', '05 May', '06 Jun',
-            '07 Jul', '08 Aug', '09 Sep', '10 Oct', '11 Nov', '12 Dec'
-          ].map((m, idx) => (
-            <option key={m} value={idx}>
-              {m}
-            </option>
-          ))}
-        </select>
-
-        {/* Loading Spinner */}
-        {(modelLoading || currentsLoading || gliderLoading) && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 10, color: '#ffd54f' }}>
-            <div
-              style={{
-                width: 10,
-                height: 10,
-                border: '2px solid #ffd54f',
-                borderTopColor: 'transparent',
-                borderRadius: '50%',
-                animation: 'spin 0.8s linear infinite',
-              }}
-            />
-            <span>Fetching Layer...</span>
-          </div>
-        )}
+          {/* Loading Spinner */}
+          {(modelLoading || currentsLoading || gliderLoading) && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 9.5, color: '#ffd54f' }}>
+              <div
+                style={{
+                  width: 9,
+                  height: 9,
+                  border: '2px solid #ffd54f',
+                  borderTopColor: 'transparent',
+                  borderRadius: '50%',
+                  animation: 'spin 0.8s linear infinite',
+                }}
+              />
+              <span>Fetching...</span>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* ── Bottom-Left: Live Geographic Coordinate Readout & Provenance ──── */}

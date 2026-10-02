@@ -14,13 +14,14 @@ export class OceanSurfaceLayer {
     // Enable high quality atmospheric lighting
     globe.enableLighting = true
     globe.atmosphereBrightnessShift = 0.1
-    globe.oceanNormalMapUrl = Cesium.buildModuleUrl('Assets/Textures/waterNormals.jpg')
-
     // Base ocean color
     globe.baseColor = Cesium.Color.fromCssColorString('#021226')
 
-    // Depth test against terrain / bathymetry
-    globe.depthTestAgainstTerrain = true
+    try {
+      globe.oceanNormalMapUrl = Cesium.buildModuleUrl('Assets/Textures/waterNormals.jpg')
+    } catch {
+      // Ignore asset resolution error
+    }
   }
 
   public setVisible(_visible: boolean): void {

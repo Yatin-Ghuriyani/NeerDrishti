@@ -354,25 +354,6 @@ export default function LandingPage({ onExplore }: LandingPageProps) {
               </svg>
             </button>
           </div>
-
-          {/* Quick Preset Scenarios */}
-          <div className="preset-scenarios">
-            <span className="preset-scenarios__title">Operational Scenarios:</span>
-            <div className="preset-scenarios__chips">
-              <button className="scenario-chip" onClick={() => onExplore('ocean3d')}>
-                <span>🌀 Cyclone Upwelling</span>
-              </button>
-              <button className="scenario-chip" onClick={() => onExplore('ocean3d')}>
-                <span>🌡️ Marine Heatwave</span>
-              </button>
-              <button className="scenario-chip" onClick={() => onExplore('map2d')}>
-                <span>🐟 Fishing Zones (PFZ)</span>
-              </button>
-              <button className="scenario-chip" onClick={() => onExplore('cube')}>
-                <span>🌊 Monsoonal Drift</span>
-              </button>
-            </div>
-          </div>
         </div>
       </main>
 
@@ -424,31 +405,6 @@ export default function LandingPage({ onExplore }: LandingPageProps) {
             </div>
           </div>
 
-          {/* Feature 4 */}
-          <div className="feature-card" onClick={() => onExplore('cesium')}>
-            <div className="feature-card__icon">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10"></circle>
-                <polyline points="12 6 12 12 16 14"></polyline>
-              </svg>
-            </div>
-            <div className="feature-card__info">
-              <h3 className="feature-card__title">Temporal Navigation</h3>
-              <p className="feature-card__desc">4D time-slider & automated ocean playback</p>
-            </div>
-          </div>
-
-        </div>
-
-        {/* Scroll indicator */}
-        <div className="scroll-indicator" onClick={() => onExplore('ocean3d')}>
-          <div className="mouse-icon">
-            <div className="mouse-wheel"></div>
-          </div>
-          <span className="scroll-text">Scroll to explore</span>
-          <svg className="scroll-chevron" width="12" height="8" viewBox="0 0 12 8" fill="none">
-            <path d="M1 1.5L6 6.5L11 1.5" stroke="#94a3b8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
         </div>
       </footer>
     </div>

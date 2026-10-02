@@ -51,6 +51,7 @@ export interface SceneState {
   show_currents: boolean
   show_model: boolean
   show_glider: boolean
+  show_error_map?: boolean
   show_bathymetry: boolean
   vertical_exaggeration: number
   opacity: number

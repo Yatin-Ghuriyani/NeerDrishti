@@ -434,8 +434,8 @@ function ComparisonCard({
   const selectedDepth = state.depth_m ?? 0
 
   // Pull real Argo temps from comparison API
-  const argoTemps = comparison?.argo?.['temperature'] as number[] | undefined
-  const argoDepths = comparison?.argo?.depths ?? []
+  const argoTemps = (comparison?.argo?.['temperature'] as number[] | undefined) ?? (comparison as any)?.argo_values
+  const argoDepths = comparison?.argo?.depths ?? (comparison as any)?.depth_m ?? []
 
   // Find the index in Argo depths closest to the user's selected depth
   const closestIdx = argoDepths.length > 0
@@ -448,7 +448,7 @@ function ComparisonCard({
   const surfaceObs = argoTemps?.[closestIdx] ?? selectedFloat?.temp_surface ?? undefined
 
   // Model interpolated value at selected depth
-  const interpArr = comparison?.model?.interpolated_at_argo_depths ?? []
+  const interpArr = (comparison?.model?.interpolated_at_argo_depths as number[] | undefined) ?? (comparison as any)?.model_values ?? []
   const hycomVal = typeof interpArr[closestIdx] === 'number'
     ? (interpArr[closestIdx] as number)
     : null
@@ -635,12 +635,12 @@ function ComparisonCard({
 
 function PointFactorDetails({ selectedObject }: { selectedObject: any }) {
   const meta = selectedObject.metadata || {}
-  const factors = meta.factors || {}
+  const factors = meta.factors || meta || {}
   const query = meta.query || {}
 
-  const lat = query.lat ?? selectedObject.position?.lat ?? 0
-  const lon = query.lon ?? selectedObject.position?.lon ?? 0
-  const depthM = query.depth_m ?? selectedObject.position?.depth_m ?? 0
+  const lat = typeof query.lat === 'number' && isFinite(query.lat) ? query.lat : (typeof selectedObject?.position?.lat === 'number' && isFinite(selectedObject.position.lat) ? selectedObject.position.lat : 0)
+  const lon = typeof query.lon === 'number' && isFinite(query.lon) ? query.lon : (typeof selectedObject?.position?.lon === 'number' && isFinite(selectedObject.position.lon) ? selectedObject.position.lon : 0)
+  const depthM = typeof query.depth_m === 'number' && isFinite(query.depth_m) ? query.depth_m : (typeof selectedObject?.position?.depth_m === 'number' && isFinite(selectedObject.position.depth_m) ? selectedObject.position.depth_m : 0)
 
   // API field name map: backend returns these exact keys
   const temp   = factors.temperature    ?? factors.temperature_c    ?? null
@@ -654,7 +654,7 @@ function PointFactorDetails({ selectedObject }: { selectedObject: any }) {
   const o2     = factors.dissolved_o2_umol_kg ?? factors.dissolved_oxygen_umol_kg ?? null
   const press  = factors.hydrostatic_pressure_dbar ?? depthM
 
-  const fmt = (v: number | null, dec = 2) => v != null ? v.toFixed(dec) : '—'
+  const fmt = (v: number | null | undefined, dec = 2) => typeof v === 'number' && isFinite(v) ? v.toFixed(dec) : '—'
 
   const rows: { label: string; value: string; color: string }[] = [
     { label: 'Temperature',     value: `${fmt(temp)} °C`,        color: '#ff5252' },

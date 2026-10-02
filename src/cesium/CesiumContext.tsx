@@ -36,7 +36,7 @@ const DEFAULT_STATE: OceanVisualizationState = {
     argo_tracks: true,
     glider: true,
     model_slice: true,
-    current_vectors: false,
+    current_vectors: true,
     current_particles: false,
     model_error: false,
     observation_density: false,
@@ -47,7 +47,7 @@ const DEFAULT_STATE: OceanVisualizationState = {
   particle_density: 'medium',
   particle_speed: 1.0,
   volume_quality: 'medium',
-  volume_opacity: 0.85,
+  volume_opacity: 0.38,
 }
 
 const CesiumContext = createContext<CesiumContextValue | null>(null)

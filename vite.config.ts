@@ -8,12 +8,9 @@ export default defineConfig(({ mode }) => ({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'https://neerdrishti-backend-jl2v.onrender.com',
+        target: 'http://localhost:8000',
         changeOrigin: true,
         secure: false,
-        headers: {
-          Origin: 'https://samudratech.vercel.app',
-        },
       },
     },
   },

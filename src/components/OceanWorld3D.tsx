@@ -721,6 +721,7 @@ export default function OceanWorld3D({
   const sliceGroupRef= useRef<THREE.Group | null>(null)
   const activeSliceGroupRef = useRef<THREE.Group | null>(null)
   const floatGroupRef= useRef<THREE.Group | null>(null)
+  const gliderGroupRef = useRef<THREE.Group | null>(null)
   const gridGroupRef = useRef<THREE.Group | null>(null)
   const landMeshRef  = useRef<THREE.Mesh | null>(null)
   const cloudMeshRef = useRef<THREE.Mesh | null>(null)
@@ -917,6 +918,12 @@ export default function OceanWorld3D({
     scene3.add(floatGroup)
     floatGroupRef.current = floatGroup
 
+    // ── Underwater Glider Trajectory Group ───────────────────────────
+    const gliderGroup = new THREE.Group()
+    gliderGroup.name = 'underwater-gliders'
+    scene3.add(gliderGroup)
+    gliderGroupRef.current = gliderGroup
+
     // ── 3D Ocean Vertical Transect Fence Group (Esri In-Situ GIS) ────
     const transectGroup = new THREE.Group()
     transectGroup.name = 'transect-curtains'
@@ -999,21 +1006,39 @@ export default function OceanWorld3D({
           ctrl.target.copy(flight.endTarget)
           flightRef.current = null
         } else {
-          // Smooth sinusoidal ease-in-out
+          // Smooth sinusoidal ease-in-out spherical vector slerp
           const ease = 0.5 - Math.cos(elapsed * Math.PI) / 2
           const startDir = flight.startPos.clone().normalize()
           const endDir = flight.endPos.clone().normalize()
           const startR = flight.startPos.length()
           const endR = flight.endPos.length()
 
-          const qStart = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), startDir)
-          const qEnd = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), endDir)
-          const qCur = new THREE.Quaternion().slerpQuaternions(qStart, qEnd, ease)
+          const vector3Slerp = (v0: THREE.Vector3, v1: THREE.Vector3, t: number) => {
+            const dot = THREE.MathUtils.clamp(v0.dot(v1), -1, 1)
+            if (dot > 0.9995 || dot < -0.9995) return v0.clone().lerp(v1, t).normalize()
+            const omega = Math.acos(dot)
+            const sinOmega = Math.sin(omega)
+            if (sinOmega < 0.0001) return v0.clone().lerp(v1, t).normalize()
+            const s0 = Math.sin((1 - t) * omega) / sinOmega
+            const s1 = Math.sin(t * omega) / sinOmega
+            return new THREE.Vector3(
+              s0 * v0.x + s1 * v1.x,
+              s0 * v0.y + s1 * v1.y,
+              s0 * v0.z + s1 * v1.z
+            ).normalize()
+          }
 
-          const curDir = new THREE.Vector3(0, 0, 1).applyQuaternion(qCur)
+          const curDir = vector3Slerp(startDir, endDir, ease)
           const curR = THREE.MathUtils.lerp(startR, endR, ease)
-          cam.position.copy(curDir.multiplyScalar(curR))
-          ctrl.target.lerpVectors(flight.startTarget, flight.endTarget, ease)
+
+          if (isFinite(curDir.x) && isFinite(curDir.y) && isFinite(curDir.z) && isFinite(curR) && curR > 10) {
+            cam.position.copy(curDir.multiplyScalar(curR))
+            ctrl.target.lerpVectors(flight.startTarget, flight.endTarget, ease)
+          } else {
+            cam.position.copy(flight.endPos)
+            ctrl.target.copy(flight.endTarget)
+            flightRef.current = null
+          }
         }
       } else {
         // Keyboard fly controls
@@ -1171,14 +1196,20 @@ export default function OceanWorld3D({
   }, [])
 
   // ── Smooth Spherical Globe Flight Animation ─────────────────────────────
-  const smoothFlyTo = useCallback((targetLat: number, targetLon: number, altitude = 1600, targetCenter?: THREE.Vector3, duration = 900) => {
+  const smoothFlyTo = useCallback((targetLat: number, targetLon: number, altitude = 1800, targetCenter?: THREE.Vector3, duration = 900) => {
     const center = targetCenter ?? new THREE.Vector3(0, 0, 0)
     const cam = cameraRef.current
     const ctrl = controlsRef.current
     if (!cam || !ctrl) return
 
-    const depthOffset = -(altitude - GLOBE_R)
-    const endPos = geoToWorld(targetLat, targetLon, depthOffset)
+    const dist = Math.max(1500, altitude)
+    const phi   = (90 - targetLat) * (Math.PI / 180)
+    const theta = (targetLon + 180) * (Math.PI / 180)
+    const endPos = new THREE.Vector3(
+      -dist * Math.sin(phi) * Math.cos(theta),
+       dist * Math.cos(phi),
+       dist * Math.sin(phi) * Math.sin(theta)
+    )
     flightRef.current = {
       startPos: cam.position.clone(),
       endPos,
@@ -1199,68 +1230,59 @@ export default function OceanWorld3D({
     raycasterRef.current.setFromCamera(mouseRef.current, cam)
 
     // 1. Check if an Argo float was clicked
-    if (floatGr && showFloats) {
+    const isShowFloats = scene.show_argo !== undefined ? scene.show_argo : showFloats
+    if (floatGr && isShowFloats) {
       const hits = raycasterRef.current.intersectObjects(floatGr.children, true)
-      if (hits.length > 0) {
-        const obj = hits[0].object
-        const ud  = (obj as any).userData
-        if (ud?.float) {
-          const f = ud.float as ArgoFloat
-          onFloatSelect({
-            platform_number: f.platform_number,
-            cycle_number:    f.cycle_number,
-            latitude:        f.latitude,
-            longitude:       f.longitude,
-            time:            f.time,
-          })
-          const curDist = Math.max(1300, Math.min(2400, cam.position.length()))
-          smoothFlyTo(f.latitude, f.longitude, curDist, new THREE.Vector3(0, 0, 0), 950)
-
-          setInspectLoading(true)
-          api.modelPoint(f.latitude, f.longitude, scene.depth_m || 0).then(res => {
-            setInspectedPoint(res)
-            setSelectedObject({
-              type: 'point_factors',
-              id: `${f.latitude.toFixed(2)}_${f.longitude.toFixed(2)}_${scene.depth_m}`,
-              title: `Argo ${f.platform_number} Point Telemetry`,
-              position: { lat: f.latitude, lon: f.longitude, depth_m: scene.depth_m },
-              source: res.source,
-              metadata: res as any,
-            })
-          }).catch(() => {}).finally(() => setInspectLoading(false))
-          return
-        }
+      const floatHit = hits.find(h => (h.object as any).userData?.float)
+      if (floatHit) {
+        const f = (floatHit.object as any).userData.float as ArgoFloat
+        onFloatSelect({
+          platform_number: f.platform_number,
+          cycle_number:    f.cycle_number,
+          latitude:        f.latitude,
+          longitude:       f.longitude,
+          time:            f.time,
+        })
+        return
       }
     }
 
-    // 2. Check world globe or depth slice plane
+    // 2. Check world globe or depth slice plane (must be on/near Earth sphere dist <= 1050)
     const worldHits = raycasterRef.current.intersectObjects(scene3.children, true)
     const oceanHit = worldHits.find(h => {
       const n = (h.object as any).name || ''
-      return h.object.type === 'Mesh' && !n.includes('star') && !n.includes('sky') && !n.includes('atmosphere') && !n.includes('cloud')
+      const dist = h.point ? h.point.length() : 99999
+      return h.object.type === 'Mesh' && dist <= 1050 && dist >= 10 &&
+             !n.includes('star') && !n.includes('sky') && !n.includes('atmosphere') && !n.includes('cloud') && !n.includes('god-rays')
     })
 
     if (oceanHit) {
       const pt = oceanHit.point
       const geo = worldToGeo(pt.x, pt.y, pt.z)
-      const targetDepth = scene.depth_m > 0 ? scene.depth_m : geo.depthM
-      const curDist = Math.max(1300, Math.min(2400, cam.position.length()))
-      smoothFlyTo(geo.lat, geo.lon, curDist, new THREE.Vector3(0, 0, 0), 950)
+      if (isFinite(geo.lat) && isFinite(geo.lon)) {
+        const targetDepth = scene.depth_m > 0 ? scene.depth_m : geo.depthM
 
-      setInspectLoading(true)
-      api.modelPoint(geo.lat, geo.lon, targetDepth).then(res => {
-        setInspectedPoint(res)
-        setSelectedObject({
-          type: 'point_factors',
-          id: `pt_${geo.lat.toFixed(2)}_${geo.lon.toFixed(2)}_${targetDepth}`,
-          title: `Ocean Telemetry (${geo.lat.toFixed(2)}°N, ${geo.lon.toFixed(2)}°E)`,
-          position: { lat: geo.lat, lon: geo.lon, depth_m: targetDepth },
-          source: res.source,
-          metadata: res as any,
-        })
-      }).catch(() => {}).finally(() => setInspectLoading(false))
+        setInspectLoading(true)
+        api.modelPoint(geo.lat, geo.lon, targetDepth).then(res => {
+          if (res && res.factors && res.query) {
+            setInspectedPoint(res)
+            setSelectedObject({
+              type: 'point_factors',
+              id: `pt_${geo.lat.toFixed(2)}_${geo.lon.toFixed(2)}_${targetDepth}`,
+              title: `Ocean Telemetry (${geo.lat.toFixed(2)}°N, ${geo.lon.toFixed(2)}°E)`,
+              position: { lat: geo.lat, lon: geo.lon, depth_m: targetDepth },
+              source: res.source || 'INCOIS IGORA / HYCOM',
+              metadata: res as any,
+            })
+          }
+        }).catch(() => {}).finally(() => setInspectLoading(false))
+      }
+    } else {
+      // Clicked outside globe on space/universe -> clear inspection panel cleanly
+      setInspectedPoint(null)
+      setSelectedObject(null)
     }
-  }, [onFloatSelect, scene.depth_m, showFloats, setSelectedObject, smoothFlyTo])
+  }, [onFloatSelect, scene.depth_m, showFloats, setSelectedObject])
 
   // ── Camera Navigation Presets (Smooth Interpolated Flight) ───────────────
   const flyToPreset = (mode: 'orbit' | 'basin' | 'surface' | 'mixed' | 'thermo' | 'abyss') => {
@@ -1295,9 +1317,8 @@ export default function OceanWorld3D({
       ;(c.material as THREE.Material)?.dispose?.()
       group.remove(c)
     }
-    if (!showFloats || !displayFloats.length) return
-
-    if (!showFloats || displayFloats.length === 0) return
+    const isShowFloats = scene.show_argo !== undefined ? scene.show_argo : showFloats
+    if (!isShowFloats || !displayFloats || displayFloats.length === 0) return
 
     const sphereGeo = new THREE.SphereGeometry(3.5, 12, 8)
 
@@ -1322,6 +1343,7 @@ export default function OceanWorld3D({
       const glowGeo = new THREE.SphereGeometry(7, 10, 6)
       const glow = new THREE.Mesh(glowGeo, glowMat)
       glow.position.copy(surfacePos)
+      glow.userData.float = f
       group.add(glow)
 
       // Radial Depth Cable plunging down into the ocean volume with in-situ sensor depth rings
@@ -1330,7 +1352,9 @@ export default function OceanWorld3D({
       const linePts = [surfacePos, deepPos]
       const lineGeo = new THREE.BufferGeometry().setFromPoints(linePts)
       const lineMat = new THREE.LineBasicMaterial({ color: col, transparent: true, opacity: 0.75 })
-      group.add(new THREE.Line(lineGeo, lineMat))
+      const lineMesh = new THREE.Line(lineGeo, lineMat)
+      lineMesh.userData.float = f
+      group.add(lineMesh)
 
       // In-situ CTD depth sensor calibration rings along the profile pillar
       for (let ringD = 100; ringD <= maxD; ringD += 300) {
@@ -1340,6 +1364,7 @@ export default function OceanWorld3D({
         const ringMesh = new THREE.Mesh(ringGeo, ringMat)
         ringMesh.position.copy(ringPos)
         ringMesh.lookAt(0, 0, 0)
+        ringMesh.userData.float = f
         group.add(ringMesh)
       }
 
@@ -1349,10 +1374,11 @@ export default function OceanWorld3D({
         const hlMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.3, wireframe: true })
         const hl = new THREE.Mesh(hlGeo, hlMat)
         hl.position.copy(surfacePos)
+        hl.userData.float = f
         group.add(hl)
       }
     })
-  }, [displayFloats, showFloats, selectedFloat])
+  }, [displayFloats, scene.show_argo, showFloats, selectedFloat])
 
   // ── Active Selected Depth Slice Shell (Prediction vs EBK Error) ───────────
   useEffect(() => {
@@ -1579,6 +1605,45 @@ export default function OceanWorld3D({
     if (cloudMeshRef.current) cloudMeshRef.current.visible = showClouds && !underwaterRef.current
   }, [showClouds])
 
+  // ── 3D Underwater Glider Trajectories ──────────────────────────────────────
+  useEffect(() => {
+    const group = gliderGroupRef.current
+    if (!group) return
+
+    while (group.children.length > 0) {
+      const c = group.children[0] as THREE.Object3D
+      if ((c as any).geometry) (c as any).geometry.dispose?.()
+      if ((c as any).material) (c as any).material.dispose?.()
+      group.remove(c)
+    }
+
+    if (!scene.show_glider) return
+
+    api.gliderTrajectory('sea057_20220128').then(data => {
+      if (!data?.waypoints?.length) return
+      const waypoints = data.waypoints
+      const linePts: THREE.Vector3[] = []
+
+      waypoints.forEach((wpt, idx) => {
+        const depthM = 10 + Math.abs(Math.sin(idx * 0.4)) * 490
+        const pos = geoToWorld(wpt.lat, wpt.lon, depthM)
+        linePts.push(pos)
+
+        const diamondGeo = new THREE.OctahedronGeometry(4)
+        const diamondMat = new THREE.MeshBasicMaterial({ color: 0xffaa00, wireframe: true })
+        const diamondMesh = new THREE.Mesh(diamondGeo, diamondMat)
+        diamondMesh.position.copy(pos)
+        group.add(diamondMesh)
+      })
+
+      if (linePts.length > 1) {
+        const lineGeo = new THREE.BufferGeometry().setFromPoints(linePts)
+        const lineMat = new THREE.LineBasicMaterial({ color: 0xffaa00, linewidth: 2 })
+        group.add(new THREE.Line(lineGeo, lineMat))
+      }
+    }).catch(() => {})
+  }, [scene.show_glider])
+
   // ── 3D Data-Driven Flow Lines & Drift Tracks Effect ────────────────────────
   useEffect(() => {
     const group = currentGroupRef.current
@@ -1591,7 +1656,8 @@ export default function OceanWorld3D({
       group.remove(c)
     }
 
-    if (!showCurrents) return
+    const isShowCurrents = scene.show_currents !== undefined ? scene.show_currents : showCurrents
+    if (!isShowCurrents) return
 
     buildDataDriven3DLines(group, {
       floats: displayFloats,
@@ -1600,7 +1666,7 @@ export default function OceanWorld3D({
       variable: scene.variable,
       selectedFloat,
     })
-  }, [showCurrents, lineMode, displayFloats, scene.depth_m, scene.variable, selectedFloat])
+  }, [scene.show_currents, showCurrents, lineMode, displayFloats, scene.depth_m, scene.variable, selectedFloat])
 
   // ── Grid Toggle ────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -2022,7 +2088,7 @@ export default function OceanWorld3D({
       )}
 
       {/* ── Bottom-Left: Live Multi-Factor Ocean Telemetry Card ──────── */}
-      {inspectedPoint && (
+      {inspectedPoint && inspectedPoint.query && inspectedPoint.factors && (
         <div style={{
           position: 'absolute', bottom: 85, left: 16, zIndex: 25,
           background: 'rgba(2, 10, 26, 0.95)', border: '1px solid #00e5ff',
@@ -2151,7 +2217,9 @@ function buildStarrySky(scene: THREE.Scene) {
         gl_FragColor = vec4(col, 1.0);
       }`,
   })
-  scene.add(new THREE.Mesh(new THREE.SphereGeometry(11000, 32, 16), skyMat))
+  const skyMesh = new THREE.Mesh(new THREE.SphereGeometry(11000, 32, 16), skyMat)
+  skyMesh.name = 'star-sky-dome'
+  scene.add(skyMesh)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

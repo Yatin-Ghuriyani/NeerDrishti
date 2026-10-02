@@ -631,11 +631,11 @@ const PALETTE_DEFS: Record<ColorPaletteType, { name: string; stops: CS[] }> = {
 }
 
 const LAND: CS[] = [
-  { v: 0,    c: new THREE.Color(0xd4b483) }, // Coast sand
-  { v: 30,   c: new THREE.Color(0x6aaa4a) }, // Plains vegetation
-  { v: 150,  c: new THREE.Color(0x4a7c35) }, // Deciduous green
-  { v: 400,  c: new THREE.Color(0x8b7040) }, // Plateau brown
-  { v: 1000, c: new THREE.Color(0x888888) }, // High terrain rock
+  { v: 0,    c: new THREE.Color(0xe5c185) }, // Coast sand
+  { v: 30,   c: new THREE.Color(0x48a832) }, // Vibrant plains green
+  { v: 150,  c: new THREE.Color(0x2d7722) }, // Lush forest green
+  { v: 400,  c: new THREE.Color(0x946b38) }, // Deccan Plateau terra brown
+  { v: 1000, c: new THREE.Color(0x7a7a68) }, // Mountain peak rock
 ]
 
 const FLOOR: CS[] = [
@@ -1426,13 +1426,12 @@ export default function OceanCubeScene({
     }
     tGeo.setAttribute('color', new THREE.Float32BufferAttribute(ca, 3))
     terrainGeoRef.current = tGeo
-    const tMat = new THREE.MeshStandardMaterial({
+    const tMat = new THREE.MeshBasicMaterial({
       vertexColors: true,
-      roughness: 0.75,
-      metalness: 0.08,
       transparent: true,
       opacity: terrainOpacity,
       wireframe: wireframeTerrain,
+      side: THREE.DoubleSide,
     })
     const tMsh = new THREE.Mesh(tGeo, tMat)
     tMsh.name = 'terrain'
@@ -1732,28 +1731,34 @@ export default function OceanCubeScene({
           const edgeFade = Math.min(1.0, Math.max(0, ex) * Math.max(0, ez))
           const elev = bilin(data.elevation, lf, of, rows, cols)
           rawElev[vi] = elev
-          rawY[vi] = elev >= 0 ? elev * LAND_SCALE * edgeFade : -Math.abs(elev) * OCEAN_SCALE * vertExaggeration
+          rawY[vi] = elev >= 0 ? (0.15 + (elev * LAND_SCALE * 0.85 + 0.08) * edgeFade) : -Math.abs(elev) * OCEAN_SCALE * vertExaggeration
         }
 
-        // 5-pass smoothing
+        // Smooth heightfield without dragging land down underwater
         const smooth = new Float32Array(rawY)
-        for (let pass = 0; pass < 5; pass++) {
+        for (let pass = 0; pass < 2; pass++) {
           const tmp = new Float32Array(smooth)
           for (let i = 0; i <= SEG_D; i++) {
             for (let j = 0; j <= SEG_W; j++) {
+              const idx = i * (SEG_W + 1) + j
+              const isLandPt = rawElev[idx] >= 0
               let sum = 0
               let cnt = 0
-              for (let di = -2; di <= 2; di++) {
-                for (let dj = -2; dj <= 2; dj++) {
+              for (let di = -1; di <= 1; di++) {
+                for (let dj = -1; dj <= 1; dj++) {
                   const ni = i + di
                   const nj = j + dj
                   if (ni >= 0 && ni <= SEG_D && nj >= 0 && nj <= SEG_W) {
-                    sum += tmp[ni * (SEG_W + 1) + nj]
-                    cnt++
+                    const nIdx = ni * (SEG_W + 1) + nj
+                    const nIsLand = rawElev[nIdx] >= 0
+                    if (isLandPt === nIsLand) {
+                      sum += tmp[nIdx]
+                      cnt++
+                    }
                   }
                 }
               }
-              smooth[i * (SEG_W + 1) + j] = sum / cnt
+              smooth[idx] = cnt > 0 ? sum / cnt : tmp[idx]
             }
           }
         }
@@ -2112,15 +2117,14 @@ export default function OceanCubeScene({
             const spd = Math.sqrt(u * u + v * v)
             if (!isFinite(spd) || spd < 0.005) continue
 
-            const col = dynamicColor(spd, 'turbo', 0, 1.8, 'linear')
             grp.add(
               new THREE.ArrowHelper(
                 new THREE.Vector3(u, 0, -v).normalize(),
                 wp(lats[i], lons[j], depthM, vertExaggeration),
-                Math.min(2.0, spd * 3.8),
-                col.getHex(),
-                0.35,
-                0.2
+                Math.min(2.5, spd * 4.2),
+                0x020617, // Dark high-contrast navy/charcoal for max visibility on yellow/orange ocean surface
+                0.45,
+                0.25
               )
             )
           }
