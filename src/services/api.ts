@@ -295,6 +295,8 @@ export interface GliderMission {
   has_real_data?: boolean
 }
 
+const FALLBACK_DIRECT_URL = 'https://sih2026-xdr2.onrender.com/api'
+
 async function apiFetch<T>(path: string, params?: Record<string, string | number | undefined | null>): Promise<T> {
   const isAbsolute = API_BASE.startsWith('http://') || API_BASE.startsWith('https://')
   const baseUrl = isAbsolute ? API_BASE : `${window.location.origin}${API_BASE.startsWith('/') ? '' : '/'}${API_BASE}`
@@ -307,12 +309,31 @@ async function apiFetch<T>(path: string, params?: Record<string, string | number
     })
   }
 
-  const response = await fetch(url.toString())
-  if (!response.ok) {
-    const errorText = await response.text()
-    throw new Error(`API error ${response.status}: ${errorText}`)
+  try {
+    const response = await fetch(url.toString())
+    if (response.ok) {
+      return (await response.json()) as T
+    }
+  } catch (err) {
+    console.warn(`Primary API fetch failed for ${path}, retrying with direct backend URL...`, err)
   }
-  return response.json() as Promise<T>
+
+  if (!isAbsolute && FALLBACK_DIRECT_URL) {
+    const fallbackUrl = new URL(`${FALLBACK_DIRECT_URL}${normalizedPath}`)
+    if (params) {
+      Object.entries(params).forEach(([k, v]) => {
+        if (v !== undefined && v !== null) fallbackUrl.searchParams.set(k, String(v))
+      })
+    }
+    const fallbackResponse = await fetch(fallbackUrl.toString())
+    if (fallbackResponse.ok) {
+      return (await fallbackResponse.json()) as T
+    }
+    const errorText = await fallbackResponse.text()
+    throw new Error(`API error ${fallbackResponse.status}: ${errorText}`)
+  }
+
+  throw new Error(`API fetch failed for ${path}`)
 }
 
 export const api = {
